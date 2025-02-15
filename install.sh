@@ -1,7 +1,4 @@
 
-### `install.sh`
-
-```sh
 #!/bin/bash
 
 # Update and upgrade the system
