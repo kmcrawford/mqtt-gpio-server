@@ -24,8 +24,8 @@ sudo systemctl enable mosquitto
 sudo systemctl restart mosquitto
 
 # Install Go
-wget https://golang.org/dl/go1.20.1.linux-armv6l.tar.gz
-sudo tar -C /usr/local -xzf go1.20.1.linux-armv6l.tar.gz
+wget https://golang.org/dl/go1.24.0.linux-armv6l.tar.gz
+sudo tar -C /usr/local -xzf go1.24.0.linux-armv6l.tar.gz
 echo "export PATH=$PATH:/usr/local/go/bin" >> ~/.profile
 source ~/.profile
 
