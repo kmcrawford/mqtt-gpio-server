@@ -43,6 +43,7 @@ func messageHandler(client mqtt.Client, msg mqtt.Message) {
 
 	if cmd.Pin == "ALL" {
 		retrieveGPIOStates(client)
+		return
 	}
 
 	pin := gpioreg.ByName(cmd.Pin)
