@@ -20,6 +20,8 @@ const (
 	STATUS_TOPIC  = "gpio/status"
 )
 
+var config Config
+
 // Command struct for JSON messages
 type Command struct {
 	Pin   string `json:"pin"`
@@ -39,6 +41,10 @@ func messageHandler(client mqtt.Client, msg mqtt.Message) {
 		return
 	}
 
+	if cmd.Pin == "ALL" {
+		retrieveGPIOStates(client)
+	}
+
 	pin := gpioreg.ByName(cmd.Pin)
 	if pin == nil {
 		log.Printf("Invalid GPIO pin: %s\n", cmd.Pin)
@@ -56,8 +62,12 @@ func messageHandler(client mqtt.Client, msg mqtt.Message) {
 	client.Publish(STATUS_TOPIC, 0, false, fmt.Sprintf(`{"%s": "%s"}`, cmd.Pin, cmd.State))
 }
 
+func retrieveGPIOStates(client mqtt.Client) {
+	publishGPIOStates(client, config.Pins, true)
+}
+
 // Function to read GPIO states and publish periodically
-func publishGPIOStates(client mqtt.Client, pins []string) {
+func publishGPIOStates(client mqtt.Client, pins []string, alwaysPublish bool) {
 	statesPrev := make(map[string]string)
 	for {
 		states := make(map[string]string)
@@ -78,12 +88,15 @@ func publishGPIOStates(client mqtt.Client, pins []string) {
 		time.Sleep(100 * time.Millisecond) // Adjust update interval as needed
 
 		//if states not equal to statesPrev continue
-		if !compareMaps(states, statesPrev) {
+		if !compareMaps(states, statesPrev) || alwaysPublish {
 			data, _ := json.Marshal(states)
 			client.Publish(STATUS_TOPIC, 0, false, data)
 			statesPrev = states
 		}
 
+		if alwaysPublish {
+			break
+		}
 	}
 }
 
@@ -101,7 +114,6 @@ func main() {
 	defer configFile.Close()
 
 	byteValue, _ := io.ReadAll(configFile)
-	var config Config
 	json.Unmarshal(byteValue, &config)
 
 	// MQTT Client Setup
@@ -114,7 +126,7 @@ func main() {
 	// Subscribe to control topic
 	client.Subscribe(CONTROL_TOPIC, 0, messageHandler)
 	log.Println("Subscribed to", CONTROL_TOPIC)
-	go publishGPIOStates(client, config.Pins)
+	go publishGPIOStates(client, config.Pins, false)
 
 	select {} // Keep running
 }
